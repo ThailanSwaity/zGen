@@ -1,64 +1,86 @@
-use crossterm::{cursor, style, terminal, ExecutableCommand, QueueableCommand};
+use crossterm::{
+    cursor,
+    event::{poll, read, Event, KeyCode},
+    style, terminal, ExecutableCommand, QueueableCommand,
+};
 use std::io::{stdout, Stdout, Write};
-use std::{thread, time};
+use std::time;
 
 use json::JsonValue;
 
 fn main() {
-    let mut stdout = stdout();
-
-    let mut width = terminal::window_size().unwrap().columns;
-    let mut height = terminal::window_size().unwrap().rows;
-
-    let mut box_width;
-    let mut box_height = 10;
-
     terminal::enable_raw_mode().unwrap();
 
     let quotes = get_quote_cache();
-    let padding = 5;
 
     for index in 0..quotes.len() {
-        stdout
-            .execute(terminal::Clear(terminal::ClearType::All))
-            .unwrap();
-
-        box_width = std::cmp::min((quotes[index]["q"].to_string().len()) as u16, width - 25);
-
-        queue_text_with_wrap(
-            &mut stdout,
+        draw(
             &quotes[index]["q"].to_string(),
-            (width / 2) - (box_width / 2) + padding,
-            height / 2 - 1,
-            box_width - (2 * padding),
+            &quotes[index]["a"].to_string(),
         );
 
-        // Print quote author
-        stdout
-            .queue(cursor::MoveTo(
-                width / 2,
-                (height / 2) + (box_height / 2) - 2,
-            ))
-            .unwrap()
-            .queue(style::Print(&quotes[index]["a"]))
-            .unwrap();
-
-        queue_box(
-            &mut stdout,
-            (width / 2) - (box_width / 2),
-            (height / 2) - (box_height / 2),
-            box_width,
-            box_height,
-        );
-
-        stdout.queue(cursor::MoveTo(0, height - 1)).unwrap();
-
-        stdout.flush().unwrap();
-
-        thread::sleep(time::Duration::from_secs(10));
+        for _ in 0..10000 {
+            if blocking_poll_for_terminal_resize(time::Duration::from_millis(10)) {
+                draw(
+                    &quotes[index]["q"].to_string(),
+                    &quotes[index]["a"].to_string(),
+                );
+            }
+            if blocking_poll_for_cntrlc(time::Duration::from_millis(10)) {
+                terminal::disable_raw_mode().unwrap();
+                return;
+            }
+        }
     }
 
     terminal::disable_raw_mode().unwrap();
+}
+
+fn draw(quote: &str, author: &str) {
+    let mut stdout = stdout();
+
+    let width = terminal::window_size().unwrap().columns;
+    let height = terminal::window_size().unwrap().rows;
+
+    let box_height = 10;
+
+    let padding = 5;
+
+    stdout
+        .execute(terminal::Clear(terminal::ClearType::All))
+        .unwrap();
+
+    let box_width = std::cmp::min((quote.len()) as u16, width - 25);
+
+    queue_text_with_wrap(
+        &mut stdout,
+        quote,
+        (width / 2) - (box_width / 2) + padding,
+        height / 2 - 1,
+        box_width - (2 * padding),
+    );
+
+    // Print quote author
+    stdout
+        .queue(cursor::MoveTo(
+            width / 2,
+            (height / 2) + (box_height / 2) - 2,
+        ))
+        .unwrap()
+        .queue(style::Print(&author))
+        .unwrap();
+
+    queue_box(
+        &mut stdout,
+        (width / 2) - (box_width / 2),
+        (height / 2) - (box_height / 2),
+        box_width,
+        box_height,
+    );
+
+    stdout.queue(cursor::MoveTo(0, height - 1)).unwrap();
+
+    stdout.flush().unwrap();
 }
 
 fn get_quote_cache() -> JsonValue {
@@ -111,6 +133,26 @@ fn queue_box(stdout: &mut Stdout, x: u16, y: u16, width: u16, height: u16) {
             }
         }
     }
+}
+
+fn blocking_poll_for_terminal_resize(delay: time::Duration) -> bool {
+    if poll(delay).unwrap() {
+        return match read().unwrap() {
+            Event::Resize(width, height) => true,
+            _ => false,
+        };
+    }
+    false
+}
+
+fn blocking_poll_for_cntrlc(delay: time::Duration) -> bool {
+    if poll(delay).unwrap() {
+        return match read().unwrap() {
+            Event::Key(event) => event.code == KeyCode::Char('c') && event.modifiers.bits() == 2,
+            _ => false,
+        };
+    }
+    false
 }
 
 fn queue_text_with_wrap(stdout: &mut Stdout, text: &str, x: u16, y: u16, width: u16) {
