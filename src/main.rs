@@ -56,7 +56,7 @@ fn draw(quote: &str, author: &str) {
         &mut stdout,
         quote,
         (width / 2) - (box_width / 2) + padding,
-        height / 2 - 1,
+        height / 2 - 2,
         box_width - (2 * padding),
     );
 
