@@ -50,7 +50,7 @@ fn draw(quote: &str, author: &str) {
         .execute(terminal::Clear(terminal::ClearType::All))
         .unwrap();
 
-    let box_width = std::cmp::min((quote.len()) as u16, width - 25);
+    let box_width = std::cmp::min((quote.len()) as u16, width / 2);
 
     queue_text_with_wrap(
         &mut stdout,
