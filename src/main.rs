@@ -11,29 +11,29 @@ use json::JsonValue;
 fn main() {
     terminal::enable_raw_mode().unwrap();
 
-    let quotes = get_quote_cache();
+    loop {
+        let quotes = get_quote_cache();
 
-    for index in 0..quotes.len() {
-        draw(
-            &quotes[index]["q"].to_string(),
-            &quotes[index]["a"].to_string(),
-        );
+        for index in 0..quotes.len() {
+            draw(
+                &quotes[index]["q"].to_string(),
+                &quotes[index]["a"].to_string(),
+            );
 
-        for _ in 0..10000 {
-            if blocking_poll_for_terminal_resize(time::Duration::from_millis(10)) {
-                draw(
-                    &quotes[index]["q"].to_string(),
-                    &quotes[index]["a"].to_string(),
-                );
-            }
-            if blocking_poll_for_cntrlc(time::Duration::from_millis(10)) {
-                terminal::disable_raw_mode().unwrap();
-                return;
+            for _ in 0..10000 {
+                if blocking_poll_for_terminal_resize(time::Duration::from_millis(10)) {
+                    draw(
+                        &quotes[index]["q"].to_string(),
+                        &quotes[index]["a"].to_string(),
+                    );
+                }
+                if blocking_poll_for_cntrlc(time::Duration::from_millis(10)) {
+                    terminal::disable_raw_mode().unwrap();
+                    return;
+                }
             }
         }
     }
-
-    terminal::disable_raw_mode().unwrap();
 }
 
 fn draw(quote: &str, author: &str) {
