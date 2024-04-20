@@ -12,15 +12,15 @@ fn main() {
     terminal::enable_raw_mode().unwrap();
 
     loop {
-        let quotes = get_quote_cache();
+        let quotes = blocking_get_quote_cache();
 
-        for index in 0..quotes.len() {
+        for index in 0..quotes.len() - 1 {
             draw(
                 &quotes[index]["q"].to_string(),
                 &quotes[index]["a"].to_string(),
             );
 
-            for _ in 0..6000 {
+            for _ in 0..50 {
                 if blocking_poll_for_terminal_resize(time::Duration::from_millis(10)) {
                     draw(
                         &quotes[index]["q"].to_string(),
@@ -50,7 +50,10 @@ fn draw(quote: &str, author: &str) {
         .execute(terminal::Clear(terminal::ClearType::All))
         .unwrap();
 
-    let box_width = std::cmp::min((quote.len()) as u16, width / 2);
+    let box_width = std::cmp::min(
+        quote.len() as u16 + 2 * padding,
+        (width as f32 * 0.8) as u16,
+    );
 
     queue_text_with_wrap(
         &mut stdout,
@@ -83,7 +86,7 @@ fn draw(quote: &str, author: &str) {
     stdout.flush().unwrap();
 }
 
-fn get_quote_cache() -> JsonValue {
+fn blocking_get_quote_cache() -> JsonValue {
     let resp = reqwest::blocking::get("https://zenquotes.io/api/quotes/")
         .unwrap()
         .text()
@@ -159,7 +162,7 @@ fn queue_text_with_wrap(stdout: &mut Stdout, text: &str, x: u16, y: u16, width: 
     let mut dy = 0;
     let mut dx = 0;
     for word in text.split_whitespace() {
-        if dx + word.len() as u16 >= width {
+        if dx + word.len() as u16 > width {
             dy += 1;
             dx = 0;
         }
