@@ -20,7 +20,7 @@ fn main() {
                 &quotes[index]["a"].to_string(),
             );
 
-            for _ in 0..50 {
+            for _ in 0..6000 {
                 if blocking_poll_for_terminal_resize(time::Duration::from_millis(10)) {
                     draw(
                         &quotes[index]["q"].to_string(),
