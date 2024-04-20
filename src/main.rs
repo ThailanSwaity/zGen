@@ -20,7 +20,7 @@ fn main() {
                 &quotes[index]["a"].to_string(),
             );
 
-            for _ in 0..6000 {
+            for _ in 0..60 {
                 if blocking_poll_for_terminal_resize(time::Duration::from_millis(10)) {
                     draw(
                         &quotes[index]["q"].to_string(),
@@ -42,8 +42,6 @@ fn draw(quote: &str, author: &str) {
     let width = terminal::window_size().unwrap().columns;
     let height = terminal::window_size().unwrap().rows;
 
-    let box_height = 10;
-
     let padding = 5;
 
     stdout
@@ -54,6 +52,10 @@ fn draw(quote: &str, author: &str) {
         quote.len() as u16 + 2 * padding,
         (width as f32 * 0.8) as u16,
     );
+
+    let box_width = std::cmp::max(author.len() as u16 * 2, box_width);
+
+    let box_height = quote.len() as u16 / (box_width - 2 * padding) + 9;
 
     queue_text_with_wrap(
         &mut stdout,
