@@ -53,7 +53,7 @@ fn draw(quote: &str, author: &str) {
         (width as f32 * 0.8) as u16,
     );
 
-    let box_width = std::cmp::max(author.len() as u16 * 2, box_width);
+    let box_width = std::cmp::max((author.len() as u16 + 5) * 2, box_width);
 
     let box_height = quote.len() as u16 / (box_width - 2 * padding) + 9;
 
